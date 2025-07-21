@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IoT Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    .dashboard {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+    }
+    .value {
+      font-size: 2rem;
+      margin: 10px 0;
+    }
+    #timestamp {
+      text-align: center;
+      margin: 10px 0;
+      color: #666;
+    }
+    .led-control {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .on-btn {
+      background-color: #4caf50;
+      color: white;
+    }
+    .off-btn {
+      background-color: #f44336;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1>🌤️ IoT Dashboard</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>🌡️ Temperature</h2>
+        <div class="value" id="temp">-- °C</div>
+      </div>
+      <div class="card">
+        <h2>💧 Humidity</h2>
+        <div class="value" id="hum">-- %</div>
+      </div>
+    </div>
+
+    <div id="timestamp">Last updated: --</div>
+
+    <canvas id="chart" height="120"></canvas>
+
+    <div class="card led-control">
+      <h2>💡 LED Control</h2>
+      <div>
+        <button class="on-btn" onclick="setLED('ON')">Turn ON</button>
+        <button class="off-btn" onclick="setLED('OFF')">Turn OFF</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase config (แก้ไขตรงนี้)
+    var firebaseConfig = {
+      apiKey: "AIzaSyDRY4j_dl_0XHklG4t0rU8ceHgBj5xTeHc",
+      authDomain: "ledcontrol-929b9.firebaseapp.com",
+      databaseURL: "https://ledcontrol-929b9-default-rtdb.firebaseio.com",
+      projectId: "ledcontrol-929b9",
+     
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.database();
+
+    const tempEl = document.getElementById("temp");
+    const humEl = document.getElementById("hum");
+    const timeEl = document.getElementById("timestamp");
+
+    const ctx = document.getElementById('chart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: '🌡️ Temperature (°C)',
+          data: [],
+          borderColor: '#ff5722',
+          backgroundColor: 'rgba(255, 87, 34, 0.2)',
+          fill: true
+        },
+        {
+          label: '💧 Humidity (%)',
+          data: [],
+          borderColor: '#03a9f4',
+          backgroundColor: 'rgba(3, 169, 244, 0.2)',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: { display: true, text: 'Time' }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Value' }
+          }
+        }
+      }
+    });
+
+    function updateChart(temp, hum) {
+      const now = new Date();
+      const label = now.toLocaleTimeString();
+      if (chart.data.labels.length > 20) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+        chart.data.datasets[1].data.shift();
+      }
+      chart.data.labels.push(label);
+      chart.data.datasets[0].data.push(temp);
+      chart.data.datasets[1].data.push(hum);
+      chart.update();
+    }
+
+    function updateTime() {
+      const now = new Date();
+      timeEl.innerText = "Last updated: " + now.toLocaleString();
+    }
+
+    db.ref("sensor").on("value", (snapshot) => {
+      const val = snapshot.val();
+      if (val && val.temperature !== undefined && val.humidity !== undefined) {
+        tempEl.innerText = val.temperature + " °C";
+        humEl.innerText = val.humidity + " %";
+        updateChart(val.temperature, val.humidity);
+        updateTime();
+      }
+    });
+
+    function setLED(status) {
+      db.ref("/led").set(status);
+    }
+  </script>
+</body>
+</html>
