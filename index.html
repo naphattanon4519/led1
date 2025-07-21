@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>IoT Dashboard</title>
+  <title>IoT Dashboard - Temp, Humidity & LED</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -11,21 +10,21 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f0f4f8;
+      background: #e3f2fd;
       margin: 0;
       padding: 20px;
     }
     .dashboard {
-      max-width: 900px;
+      max-width: 920px;
       margin: auto;
       background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
     }
     h1 {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
     .grid {
       display: grid;
@@ -33,31 +32,42 @@
       gap: 20px;
     }
     .card {
-      background: #f9f9f9;
+      background: #f1f8e9;
       padding: 15px;
       border-radius: 10px;
     }
     .card h2 {
-      margin-top: 0;
+      margin: 0 0 10px 0;
       font-size: 1.2rem;
     }
     .value {
       font-size: 2rem;
-      margin: 10px 0;
+      font-weight: bold;
     }
     #timestamp {
       text-align: center;
-      margin: 10px 0;
-      color: #666;
+      margin: 15px 0;
+      color: #555;
+    }
+    canvas {
+      background: #fff;
+      border-radius: 10px;
+      margin-bottom: 30px;
     }
     .led-control {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      margin-top: 20px;
+      background: #fce4ec;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .led-buttons {
+      margin-top: 10px;
     }
     button {
       padding: 10px 20px;
+      margin: 5px;
       border: none;
       border-radius: 6px;
       font-size: 1rem;
@@ -71,11 +81,18 @@
       background-color: #f44336;
       color: white;
     }
+    #ledStatus {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #333;
+    }
   </style>
 </head>
 <body>
   <div class="dashboard">
-    <h1>🌤️ IoT Dashboard</h1>
+    <h1>🌤️ IoT Dashboard: Temp, Humidity & LED</h1>
+
     <div class="grid">
       <div class="card">
         <h2>🌡️ Temperature</h2>
@@ -91,30 +108,33 @@
 
     <canvas id="chart" height="120"></canvas>
 
-    <div class="card led-control">
+    <div class="led-control">
       <h2>💡 LED Control</h2>
-      <div>
-        <button class="on-btn" onclick="setLED('ON')">Turn ON</button>
-        <button class="off-btn" onclick="setLED('OFF')">Turn OFF</button>
+      <div class="led-buttons">
+        <button class="on-btn" onclick="setLED('on')">🔆 เปิด LED</button>
+        <button class="off-btn" onclick="setLED('off')">🌑 ปิด LED</button>
       </div>
+      <div id="ledStatus">สถานะ: --</div>
     </div>
   </div>
 
   <script>
-    // Firebase config (แก้ไขตรงนี้)
-    var firebaseConfig = {
+    const firebaseConfig = {
       apiKey: "AIzaSyDRY4j_dl_0XHklG4t0rU8ceHgBj5xTeHc",
       authDomain: "ledcontrol-929b9.firebaseapp.com",
       databaseURL: "https://ledcontrol-929b9-default-rtdb.firebaseio.com",
       projectId: "ledcontrol-929b9",
-     
+      storageBucket: "ledcontrol-929b9.firebasestorage.app",
+      messagingSenderId: "913743991583",
+      appId: "1:913743991583:web:e4bd57021410adbaecd62a"
     };
     firebase.initializeApp(firebaseConfig);
-    var db = firebase.database();
+    const db = firebase.database();
 
     const tempEl = document.getElementById("temp");
     const humEl = document.getElementById("hum");
     const timeEl = document.getElementById("timestamp");
+    const ledStatusEl = document.getElementById("ledStatus");
 
     const ctx = document.getElementById('chart').getContext('2d');
     const chart = new Chart(ctx, {
@@ -139,13 +159,8 @@
       options: {
         responsive: true,
         scales: {
-          x: {
-            title: { display: true, text: 'Time' }
-          },
-          y: {
-            beginAtZero: true,
-            title: { display: true, text: 'Value' }
-          }
+          x: { title: { display: true, text: 'Time' } },
+          y: { beginAtZero: true, title: { display: true, text: 'Value' } }
         }
       }
     });
@@ -180,8 +195,13 @@
     });
 
     function setLED(status) {
-      db.ref("/led").set(status);
+      db.ref("led").set(status);
     }
+
+    db.ref("led").on("value", (snapshot) => {
+      const status = snapshot.val();
+      ledStatusEl.innerText = "สถานะ: " + (status === "on" ? "เปิด" : "ปิด");
+    });
   </script>
 </body>
 </html>
